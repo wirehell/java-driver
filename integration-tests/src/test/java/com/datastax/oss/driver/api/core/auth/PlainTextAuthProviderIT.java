@@ -17,7 +17,7 @@ package com.datastax.oss.driver.api.core.auth;
 
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.Cluster;
-import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.api.testinfra.ccm.CustomCcmRule;
 import com.datastax.oss.driver.api.testinfra.cluster.ClusterUtils;
 import com.datastax.oss.driver.categories.LongTests;
@@ -43,7 +43,7 @@ public class PlainTextAuthProviderIT {
             "protocol.auth-provider.class = com.datastax.oss.driver.api.core.auth.PlainTextAuthProvider",
             "protocol.auth-provider.username = cassandra",
             "protocol.auth-provider.password = cassandra")) {
-      Session session = authCluster.connect();
+      CqlSession session = authCluster.connect();
       session.execute("select * from system.local");
     }
   }
@@ -56,7 +56,7 @@ public class PlainTextAuthProviderIT {
             "protocol.auth-provider.class = com.datastax.oss.driver.api.core.auth.PlainTextAuthProvider",
             "protocol.auth-provider.username = baduser",
             "protocol.auth-provider.password = badpass")) {
-      Session session = authCluster.connect();
+      CqlSession session = authCluster.connect();
       session.execute("select * from system.local");
     }
   }
@@ -64,7 +64,7 @@ public class PlainTextAuthProviderIT {
   @Test(expected = AllNodesFailedException.class)
   public void should_not_connect_without_credentials() {
     try (Cluster plainCluster = ClusterUtils.newCluster(ccm)) {
-      Session session = plainCluster.connect();
+      CqlSession session = plainCluster.connect();
       session.execute("select * from system.local");
     }
   }

@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.config.CoreDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.testinfra.CassandraResourceRule;
 import com.datastax.oss.driver.internal.testinfra.cluster.TestConfigLoader;
@@ -78,7 +79,7 @@ public class ClusterUtils {
   /** Creates a keyspace through the given cluster instance, with the given profile. */
   public static void createKeyspace(
       Cluster cluster, CqlIdentifier keyspace, DriverConfigProfile profile) {
-    try (Session session = cluster.connect()) {
+    try (CqlSession session = cluster.connect()) {
       SimpleStatement createKeyspace =
           SimpleStatement.builder(
                   String.format(
@@ -105,7 +106,7 @@ public class ClusterUtils {
   /** Drops a keyspace through the given cluster instance, with the given profile. */
   public static void dropKeyspace(
       Cluster cluster, CqlIdentifier keyspace, DriverConfigProfile profile) {
-    try (Session session = cluster.connect()) {
+    try (CqlSession session = cluster.connect()) {
       session.execute(
           SimpleStatement.builder(String.format("DROP KEYSPACE IF EXISTS %s", keyspace.asCql()))
               .withConfigProfile(profile)

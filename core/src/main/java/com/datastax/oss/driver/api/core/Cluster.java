@@ -19,7 +19,7 @@ import com.datastax.oss.driver.api.core.config.CoreDriverOption;
 import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.internal.core.util.concurrent.BlockingOperation;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import java.util.ResourceBundle;
@@ -72,14 +72,14 @@ public interface Cluster extends AsyncAutoCloseable {
   DriverContext getContext();
 
   /** Creates a new session to execute requests against a given keyspace. */
-  CompletionStage<Session> connectAsync(CqlIdentifier keyspace);
+  CompletionStage<CqlSession> connectAsync(CqlIdentifier keyspace);
 
   /**
    * Creates a new session not tied to any keyspace.
    *
    * <p>This is equivalent to {@code this.connectAsync(null)}.
    */
-  default CompletionStage<Session> connectAsync() {
+  default CompletionStage<CqlSession> connectAsync() {
     return connectAsync(null);
   }
 
@@ -88,7 +88,7 @@ public interface Cluster extends AsyncAutoCloseable {
    *
    * <p>This must not be called on a driver thread.
    */
-  default Session connect(CqlIdentifier keyspace) {
+  default CqlSession connect(CqlIdentifier keyspace) {
     BlockingOperation.checkNotDriverThread();
     return CompletableFutures.getUninterruptibly(connectAsync(keyspace));
   }
@@ -98,7 +98,7 @@ public interface Cluster extends AsyncAutoCloseable {
    *
    * <p>This must not be called on a driver thread.
    */
-  default Session connect() {
+  default CqlSession connect() {
     return connect(null);
   }
 }

@@ -18,7 +18,7 @@ package com.datastax.oss.driver.api.core.cql;
 import com.datastax.oss.driver.api.core.Cluster;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
-import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.api.testinfra.CassandraRequirement;
 import com.datastax.oss.driver.api.testinfra.ccm.CcmRule;
 import com.datastax.oss.driver.api.testinfra.cluster.ClusterRule;
@@ -60,7 +60,7 @@ public class BoundStatementIT {
       CqlIdentifier keyspace = ClusterUtils.uniqueKeyspaceId();
       DriverConfigProfile slowProfile = ClusterUtils.slowProfile(v3Cluster);
       ClusterUtils.createKeyspace(v3Cluster, keyspace, slowProfile);
-      Session session = v3Cluster.connect(keyspace);
+      CqlSession session = v3Cluster.connect(keyspace);
       PreparedStatement prepared =
           session.prepare("INSERT INTO test2 (k, v0, v1) values (?, ?, ?)");
 

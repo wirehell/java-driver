@@ -15,7 +15,7 @@
  */
 package com.datastax.oss.driver.api.core;
 
-import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.api.testinfra.CassandraRequirement;
 import com.datastax.oss.driver.api.testinfra.ccm.CcmRule;
 import com.datastax.oss.driver.api.testinfra.cluster.ClusterUtils;
@@ -39,7 +39,7 @@ public class ProtocolVersionInitialNegotiationIT {
     try (Cluster v3cluster = ClusterUtils.newCluster(ccm)) {
       assertThat(v3cluster.getContext().protocolVersion().getCode()).isEqualTo(3);
 
-      Session session = v3cluster.connect();
+      CqlSession session = v3cluster.connect();
       session.execute("select * from system.local");
     }
   }
@@ -54,7 +54,7 @@ public class ProtocolVersionInitialNegotiationIT {
     try (Cluster v4cluster = ClusterUtils.newCluster(ccm, "protocol.version = V4")) {
       assertThat(v4cluster.getContext().protocolVersion().getCode()).isEqualTo(3);
 
-      Session session = v4cluster.connect();
+      CqlSession session = v4cluster.connect();
       session.execute("select * from system.local");
     } catch (AllNodesFailedException anfe) {
       Throwable cause = anfe.getErrors().values().iterator().next();
@@ -71,7 +71,7 @@ public class ProtocolVersionInitialNegotiationIT {
     try (Cluster v4cluster = ClusterUtils.newCluster(ccm)) {
       assertThat(v4cluster.getContext().protocolVersion().getCode()).isEqualTo(4);
 
-      Session session = v4cluster.connect();
+      CqlSession session = v4cluster.connect();
       session.execute("select * from system.local");
     }
   }
@@ -82,7 +82,7 @@ public class ProtocolVersionInitialNegotiationIT {
     try (Cluster v3cluster = ClusterUtils.newCluster(ccm, "protocol.version = V3")) {
       assertThat(v3cluster.getContext().protocolVersion().getCode()).isEqualTo(3);
 
-      Session session = v3cluster.connect();
+      CqlSession session = v3cluster.connect();
       session.execute("select * from system.local");
     }
   }
