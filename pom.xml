@@ -33,6 +33,7 @@
 
   <modules>
     <module>core</module>
+    <module>guava</module>
     <module>test-infra</module>
     <module>integration-tests</module>
   </modules>
