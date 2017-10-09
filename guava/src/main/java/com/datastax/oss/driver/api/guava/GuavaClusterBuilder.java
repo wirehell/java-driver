@@ -48,18 +48,19 @@ public class GuavaClusterBuilder {
    * Typesafe config library. More precisely:
    *
    * <ul>
-   * <li>configuration properties are loaded and merged from the following (first-listed are higher
-   *     priority):
-   *     <ul>
-   *     <li>system properties
-   *     <li>{@code application.conf} (all resources on classpath with this name)
-   *     <li>{@code application.json} (all resources on classpath with this name)
-   *     <li>{@code application.properties} (all resources on classpath with this name)
-   *     <li>{@code reference.conf} (all resources on classpath with this name)
-   *     </ul>
+   *   <li>configuration properties are loaded and merged from the following (first-listed are
+   *       higher priority):
+   *       <ul>
+   *         <li>system properties
+   *         <li>{@code application.conf} (all resources on classpath with this name)
+   *         <li>{@code application.json} (all resources on classpath with this name)
+   *         <li>{@code application.properties} (all resources on classpath with this name)
+   *         <li>{@code reference.conf} (all resources on classpath with this name)
+   *       </ul>
    *
-   * <li>the resulting configuration is expected to contain a {@code datastax-java-driver} section.
-   * <li>that section is validated against the {@link CoreDriverOption core driver options}.
+   *   <li>the resulting configuration is expected to contain a {@code datastax-java-driver}
+   *       section.
+   *   <li>that section is validated against the {@link CoreDriverOption core driver options}.
    * </ul>
    *
    * The core driver JAR includes a {@code reference.conf} file with sensible defaults for all
