@@ -23,15 +23,19 @@ import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.core.session.DefaultSession;
 import com.datastax.oss.driver.internal.core.session.RequestHandler;
 import com.datastax.oss.driver.internal.core.session.RequestProcessor;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class CqlRequestAsyncProcessor
     implements RequestProcessor<Statement<?>, CompletionStage<AsyncResultSet>> {
 
   @Override
+  public boolean canProcess(Request request) {
+    return request instanceof Statement;
+  }
+
+  @Override
   public boolean canProcess(Request request, GenericType<?> resultType) {
-    return request instanceof Statement && resultType.equals(Statement.ASYNC);
+    return canProcess(request) && resultType.equals(Statement.ASYNC);
   }
 
   @Override

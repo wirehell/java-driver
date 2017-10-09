@@ -27,8 +27,13 @@ import com.datastax.oss.driver.internal.core.session.RequestProcessor;
 public class CqlRequestSyncProcessor implements RequestProcessor<Statement<?>, ResultSet> {
 
   @Override
+  public boolean canProcess(Request request) {
+    return request instanceof Statement;
+  }
+
+  @Override
   public boolean canProcess(Request request, GenericType<?> resultType) {
-    return request instanceof Statement && resultType.equals(Statement.SYNC);
+    return canProcess(request) && resultType.equals(Statement.SYNC);
   }
 
   @Override
