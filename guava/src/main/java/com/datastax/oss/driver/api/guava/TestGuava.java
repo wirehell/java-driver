@@ -27,7 +27,7 @@ public class TestGuava {
   public static void main(String args[]) throws InterruptedException {
     try (GuavaCluster cluster =
         GuavaCluster.builder().addContactPoint(new InetSocketAddress("localhost", 9042)).build()) {
-      GuavaSession session = cluster.connectG();
+      GuavaSession session = cluster.connect();
 
       CountDownLatch latch = new CountDownLatch(1);
       ListenableFuture<AsyncResultSet> result = session.executeAsync("select * from system.local");

@@ -16,23 +16,16 @@
 package com.datastax.oss.driver.api.guava;
 
 import com.datastax.oss.driver.api.core.Cluster;
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.context.DriverContext;
-import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.session.CqlSession;
+import com.datastax.oss.driver.internal.core.ClusterWrapper;
 import com.datastax.oss.driver.internal.core.DefaultCluster;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.guava.ListenableFutureUtils;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.Uninterruptibles;
 import java.net.InetSocketAddress;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 
-public class GuavaCluster implements Cluster {
-
-  private final Cluster delegate;
+public class GuavaCluster extends ClusterWrapper<CqlSession, GuavaSession> {
 
   public static ListenableFuture<GuavaCluster> init(
       InternalDriverContext context, Set<InetSocketAddress> contactPoints) {
@@ -40,60 +33,13 @@ public class GuavaCluster implements Cluster {
         DefaultCluster.init(context, contactPoints).thenApply(GuavaCluster::new));
   }
 
-  private GuavaCluster(Cluster delegate) {
-    this.delegate = delegate;
+  private GuavaCluster(Cluster<CqlSession> delegate) {
+    super(delegate);
   }
 
   @Override
-  public CompletionStage<Void> closeFuture() {
-    return delegate.closeFuture();
-  }
-
-  @Override
-  public CompletionStage<Void> closeAsync() {
-    return delegate.closeAsync();
-  }
-
-  @Override
-  public CompletionStage<Void> forceCloseAsync() {
-    return delegate.forceCloseAsync();
-  }
-
-  @Override
-  public String getName() {
-    return delegate.getName();
-  }
-
-  @Override
-  public Metadata getMetadata() {
-    return delegate.getMetadata();
-  }
-
-  @Override
-  public DriverContext getContext() {
-    return delegate.getContext();
-  }
-
-  @Override
-  public CompletionStage<CqlSession> connectAsync(CqlIdentifier keyspace) {
-    return delegate.connectAsync(keyspace);
-  }
-
-  public ListenableFuture<GuavaSession> connectAsyncG(CqlIdentifier keyspace) {
-    return ListenableFutureUtils.toListenableFuture(
-        delegate.connectAsync(keyspace).thenApply(GuavaSession::wrap));
-  }
-
-  public GuavaSession connectG() {
-    return connectG(null);
-  }
-
-  public GuavaSession connectG(CqlIdentifier keyspace) {
-    try {
-      return Uninterruptibles.getUninterruptibly(connectAsyncG(keyspace));
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+  protected GuavaSession wrap(CqlSession session) {
+    return GuavaSession.wrap(session);
   }
 
   public static GuavaClusterBuilder builder() {

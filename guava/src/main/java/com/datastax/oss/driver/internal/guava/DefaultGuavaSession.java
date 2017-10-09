@@ -15,19 +15,17 @@
  */
 package com.datastax.oss.driver.internal.guava;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
-import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.guava.GuavaSession;
+import com.datastax.oss.driver.internal.core.session.SessionWrapper;
 import com.google.common.util.concurrent.ListenableFuture;
-import java.util.concurrent.CompletionStage;
 
-public class DefaultGuavaSession implements GuavaSession {
+public class DefaultGuavaSession extends SessionWrapper implements GuavaSession {
 
   static final GenericType<ListenableFuture<AsyncResultSet>> ASYNC =
       new GenericType<ListenableFuture<AsyncResultSet>>() {};
@@ -35,10 +33,8 @@ public class DefaultGuavaSession implements GuavaSession {
   static final GenericType<ListenableFuture<PreparedStatement>> ASYNC_PREPARED =
       new GenericType<ListenableFuture<PreparedStatement>>() {};
 
-  private final Session delegate;
-
   public DefaultGuavaSession(Session delegate) {
-    this.delegate = delegate;
+    super(delegate);
   }
 
   @Override
@@ -59,31 +55,5 @@ public class DefaultGuavaSession implements GuavaSession {
   @Override
   public ListenableFuture<PreparedStatement> prepareAsync(String statement) {
     return this.prepareAsync(SimpleStatement.newInstance(statement));
-  }
-
-  @Override
-  public CompletionStage<Void> closeFuture() {
-    return delegate.closeFuture();
-  }
-
-  @Override
-  public CompletionStage<Void> closeAsync() {
-    return delegate.closeAsync();
-  }
-
-  @Override
-  public CompletionStage<Void> forceCloseAsync() {
-    return delegate.forceCloseAsync();
-  }
-
-  @Override
-  public CqlIdentifier getKeyspace() {
-    return delegate.getKeyspace();
-  }
-
-  @Override
-  public <RequestT extends Request, ResultT> ResultT execute(
-      RequestT request, GenericType<ResultT> resultType) {
-    return delegate.execute(request, resultType);
   }
 }
