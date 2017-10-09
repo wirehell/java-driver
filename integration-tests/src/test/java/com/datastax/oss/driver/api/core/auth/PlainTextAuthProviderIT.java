@@ -37,7 +37,7 @@ public class PlainTextAuthProviderIT {
 
   @Test
   public void should_connect_with_credentials() {
-    try (Cluster authCluster =
+    try (Cluster<CqlSession> authCluster =
         ClusterUtils.newCluster(
             ccm,
             "protocol.auth-provider.class = com.datastax.oss.driver.api.core.auth.PlainTextAuthProvider",
@@ -50,7 +50,7 @@ public class PlainTextAuthProviderIT {
 
   @Test(expected = AllNodesFailedException.class)
   public void should_not_connect_with_invalid_credentials() {
-    try (Cluster authCluster =
+    try (Cluster<CqlSession> authCluster =
         ClusterUtils.newCluster(
             ccm,
             "protocol.auth-provider.class = com.datastax.oss.driver.api.core.auth.PlainTextAuthProvider",
@@ -63,7 +63,7 @@ public class PlainTextAuthProviderIT {
 
   @Test(expected = AllNodesFailedException.class)
   public void should_not_connect_without_credentials() {
-    try (Cluster plainCluster = ClusterUtils.newCluster(ccm)) {
+    try (Cluster<CqlSession> plainCluster = ClusterUtils.newCluster(ccm)) {
       CqlSession session = plainCluster.connect();
       session.execute("select * from system.local");
     }

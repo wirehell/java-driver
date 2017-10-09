@@ -44,11 +44,11 @@ import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultCluster implements Cluster {
+public class DefaultCluster implements Cluster<CqlSession> {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultCluster.class);
 
-  public static CompletableFuture<Cluster> init(
+  public static CompletableFuture<Cluster<CqlSession>> init(
       InternalDriverContext context, Set<InetSocketAddress> contactPoints) {
     DefaultCluster cluster = new DefaultCluster(context, contactPoints);
     return cluster.init();
@@ -69,7 +69,7 @@ public class DefaultCluster implements Cluster {
     this.logPrefix = context.clusterName();
   }
 
-  private CompletableFuture<Cluster> init() {
+  private CompletableFuture<Cluster<CqlSession>> init() {
     RunOrSchedule.on(adminExecutor, singleThreaded::init);
     return singleThreaded.initFuture;
   }
@@ -118,7 +118,7 @@ public class DefaultCluster implements Cluster {
     private final InternalDriverContext context;
     private final Set<InetSocketAddress> initialContactPoints;
     private final NodeStateManager nodeStateManager;
-    private final CompletableFuture<Cluster> initFuture = new CompletableFuture<>();
+    private final CompletableFuture<Cluster<CqlSession>> initFuture = new CompletableFuture<>();
     private boolean initWasCalled;
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private boolean closeWasCalled;

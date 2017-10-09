@@ -36,7 +36,7 @@ public class ProtocolVersionInitialNegotiationIT {
   )
   @Test
   public void should_downgrade_to_v3() {
-    try (Cluster v3cluster = ClusterUtils.newCluster(ccm)) {
+    try (Cluster<CqlSession> v3cluster = ClusterUtils.newCluster(ccm)) {
       assertThat(v3cluster.getContext().protocolVersion().getCode()).isEqualTo(3);
 
       CqlSession session = v3cluster.connect();
@@ -51,7 +51,7 @@ public class ProtocolVersionInitialNegotiationIT {
   )
   @Test
   public void should_fail_if_provided_version_isnt_supported() {
-    try (Cluster v4cluster = ClusterUtils.newCluster(ccm, "protocol.version = V4")) {
+    try (Cluster<CqlSession> v4cluster = ClusterUtils.newCluster(ccm, "protocol.version = V4")) {
       assertThat(v4cluster.getContext().protocolVersion().getCode()).isEqualTo(3);
 
       CqlSession session = v4cluster.connect();
@@ -68,7 +68,7 @@ public class ProtocolVersionInitialNegotiationIT {
   @CassandraRequirement(min = "2.2", description = "required to meet default protocol version")
   @Test
   public void should_not_downgrade_if_server_supports_latest_version() {
-    try (Cluster v4cluster = ClusterUtils.newCluster(ccm)) {
+    try (Cluster<CqlSession> v4cluster = ClusterUtils.newCluster(ccm)) {
       assertThat(v4cluster.getContext().protocolVersion().getCode()).isEqualTo(4);
 
       CqlSession session = v4cluster.connect();
@@ -79,7 +79,7 @@ public class ProtocolVersionInitialNegotiationIT {
   @CassandraRequirement(min = "2.2", description = "required to use an older protocol version")
   @Test
   public void should_use_explicitly_provided_protocol_version() {
-    try (Cluster v3cluster = ClusterUtils.newCluster(ccm, "protocol.version = V3")) {
+    try (Cluster<CqlSession> v3cluster = ClusterUtils.newCluster(ccm, "protocol.version = V3")) {
       assertThat(v3cluster.getContext().protocolVersion().getCode()).isEqualTo(3);
 
       CqlSession session = v3cluster.connect();

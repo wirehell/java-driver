@@ -281,7 +281,7 @@ public class HeartbeatIT {
   @Category(LongTests.class)
   public void should_not_send_heartbeat_when_disabled() throws InterruptedException {
     // Disable heartbeats entirely, wait longer than the default timeout and make sure we didn't receive any
-    try (Cluster cluster =
+    try (Cluster<CqlSession> cluster =
         ClusterUtils.newCluster(simulacron, "connection.heartbeat.interval = 0 second")) {
       cluster.connect();
       AtomicInteger heartbeats = registerHeartbeatListener();

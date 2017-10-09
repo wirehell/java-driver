@@ -57,7 +57,7 @@ public class ClusterRule extends ExternalResource {
   private final String[] defaultClusterOptions;
 
   // the default cluster that is auto created for this rule.
-  private Cluster cluster;
+  private Cluster<CqlSession> cluster;
 
   // the default session that is auto created for this rule and is tied to the given keyspace.
   private CqlSession defaultSession;
@@ -118,7 +118,7 @@ public class ClusterRule extends ExternalResource {
   }
 
   /** @return the cluster created with this rule. */
-  public Cluster cluster() {
+  public Cluster<CqlSession> cluster() {
     return cluster;
   }
 

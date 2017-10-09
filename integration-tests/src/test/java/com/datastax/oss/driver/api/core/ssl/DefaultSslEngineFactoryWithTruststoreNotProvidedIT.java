@@ -32,7 +32,7 @@ public class DefaultSslEngineFactoryWithTruststoreNotProvidedIT {
 
   @Test(expected = AllNodesFailedException.class)
   public void should_not_connect_if_not_using_ssl() {
-    try (Cluster plainCluster = ClusterUtils.newCluster(ccm)) {
+    try (Cluster<CqlSession> plainCluster = ClusterUtils.newCluster(ccm)) {
       CqlSession session = plainCluster.connect();
       session.execute("select * from system.local");
     }

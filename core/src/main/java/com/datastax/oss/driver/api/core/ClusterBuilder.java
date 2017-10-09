@@ -18,6 +18,7 @@ package com.datastax.oss.driver.api.core;
 import com.datastax.oss.driver.api.core.config.CoreDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
+import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.internal.core.ContactPoints;
 import com.datastax.oss.driver.internal.core.DefaultCluster;
@@ -121,7 +122,7 @@ public class ClusterBuilder {
    *
    * @return a completion stage that completes with the cluster when it is fully initialized.
    */
-  public CompletionStage<Cluster> buildAsync() {
+  public CompletionStage<Cluster<CqlSession>> buildAsync() {
     DriverConfigLoader configLoader =
         buildIfNull(this.configLoader, ClusterBuilder::defaultConfigLoader);
 
@@ -139,7 +140,7 @@ public class ClusterBuilder {
   }
 
   /** Convenience method to call {@link #buildAsync()} and block on the result. */
-  public Cluster build() {
+  public Cluster<CqlSession> build() {
     BlockingOperation.checkNotDriverThread();
     return CompletableFutures.getUninterruptibly(buildAsync());
   }

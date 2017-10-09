@@ -56,7 +56,7 @@ public class DriverConfigProfileIT {
 
   @Test
   public void should_fail_if_config_profile_specified_doesnt_exist() {
-    try (Cluster profileCluster = ClusterUtils.newCluster(simulacron)) {
+    try (Cluster<CqlSession> profileCluster = ClusterUtils.newCluster(simulacron)) {
       CqlSession session = profileCluster.connect();
 
       SimpleStatement statement =
@@ -72,7 +72,7 @@ public class DriverConfigProfileIT {
 
   @Test
   public void should_use_profile_request_timeout() {
-    try (Cluster profileCluster =
+    try (Cluster<CqlSession> profileCluster =
         ClusterUtils.newCluster(simulacron, "profiles.olap.request.timeout = 10s")) {
       String query = "mockquery";
       // configure query with delay of 2 seconds.
@@ -94,7 +94,7 @@ public class DriverConfigProfileIT {
 
   @Test
   public void should_use_profile_default_idempotence() {
-    try (Cluster profileCluster =
+    try (Cluster<CqlSession> profileCluster =
         ClusterUtils.newCluster(simulacron, "profiles.idem.request.default-idempotence = true")) {
       String query = "mockquery";
       // configure query with server error which should invoke onRequestError in retry policy.
@@ -118,7 +118,7 @@ public class DriverConfigProfileIT {
 
   @Test
   public void should_use_profile_consistency() {
-    try (Cluster profileCluster =
+    try (Cluster<CqlSession> profileCluster =
         ClusterUtils.newCluster(
             simulacron,
             "profiles.cl.request.consistency = LOCAL_QUORUM",
@@ -173,7 +173,7 @@ public class DriverConfigProfileIT {
 
   @Test
   public void should_use_profile_page_size() {
-    try (Cluster profileCluster =
+    try (Cluster<CqlSession> profileCluster =
         ClusterUtils.newCluster(
             ccm, "request.page-size = 100", "profiles.smallpages.request.page-size = 10")) {
 

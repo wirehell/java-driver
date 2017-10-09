@@ -36,7 +36,7 @@ public class DefaultSslEngineFactoryIT {
         "javax.net.ssl.trustStore", CcmBridge.DEFAULT_CLIENT_TRUSTSTORE_FILE.getAbsolutePath());
     System.setProperty(
         "javax.net.ssl.trustStorePassword", CcmBridge.DEFAULT_CLIENT_TRUSTSTORE_PASSWORD);
-    try (Cluster sslCluster =
+    try (Cluster<CqlSession> sslCluster =
         ClusterUtils.newCluster(
             ccm,
             "ssl-engine-factory.class = com.datastax.oss.driver.api.core.ssl.DefaultSslEngineFactory")) {

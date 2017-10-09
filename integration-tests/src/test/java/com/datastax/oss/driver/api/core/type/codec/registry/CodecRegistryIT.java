@@ -153,7 +153,7 @@ public class CodecRegistryIT {
   @Test
   public void should_be_able_to_register_and_use_custom_codec() {
     // create a cluster with a registered codec from Float <-> cql int.
-    try (Cluster codecCluster =
+    try (Cluster<CqlSession> codecCluster =
         Cluster.builder()
             .addTypeCodecs(new FloatCIntCodec())
             .addContactPoints(ccm.getContactPoints())
@@ -269,7 +269,7 @@ public class CodecRegistryIT {
     TypeCodec<Map<Integer, Optional<String>>> mapWithOptionalValueCodec =
         TypeCodecs.mapOf(TypeCodecs.INT, new OptionalCodec<>(TypeCodecs.TEXT));
 
-    try (Cluster codecCluster =
+    try (Cluster<CqlSession> codecCluster =
         Cluster.builder()
             .addTypeCodecs(optionalMapCodec, mapWithOptionalValueCodec)
             .addContactPoints(ccm.getContactPoints())

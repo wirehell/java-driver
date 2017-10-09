@@ -59,7 +59,7 @@ public class DriverConfigProfileReloadIT {
                 ConfigFactory.parseString("config-reload-interval = 2s\n" + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()),
             CoreDriverOption.values());
-    try (Cluster configCluster =
+    try (Cluster<CqlSession> configCluster =
         Cluster.builder()
             .withConfigLoader(loader)
             .addContactPoints(simulacron.getContactPoints())
@@ -96,7 +96,7 @@ public class DriverConfigProfileReloadIT {
                 ConfigFactory.parseString("config-reload-interval = 0\n" + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()),
             CoreDriverOption.values());
-    try (Cluster configCluster =
+    try (Cluster<CqlSession> configCluster =
         Cluster.builder()
             .withConfigLoader(loader)
             .addContactPoints(simulacron.getContactPoints())
@@ -136,7 +136,7 @@ public class DriverConfigProfileReloadIT {
                 ConfigFactory.parseString("config-reload-interval = 2s\n" + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()),
             CoreDriverOption.values());
-    try (Cluster configCluster =
+    try (Cluster<CqlSession> configCluster =
         Cluster.builder()
             .withConfigLoader(loader)
             .addContactPoints(simulacron.getContactPoints())
@@ -177,7 +177,7 @@ public class DriverConfigProfileReloadIT {
                             + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()),
             CoreDriverOption.values());
-    try (Cluster configCluster =
+    try (Cluster<CqlSession> configCluster =
         Cluster.builder()
             .withConfigLoader(loader)
             .addContactPoints(simulacron.getContactPoints())
@@ -203,7 +203,7 @@ public class DriverConfigProfileReloadIT {
     }
   }
 
-  private void waitForConfigChange(Cluster cluster, long timeout, TimeUnit unit) {
+  private void waitForConfigChange(Cluster<CqlSession> cluster, long timeout, TimeUnit unit) {
     CountDownLatch latch = new CountDownLatch(1);
     ((InternalDriverContext) cluster.getContext())
         .eventBus()

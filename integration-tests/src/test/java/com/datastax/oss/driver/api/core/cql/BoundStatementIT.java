@@ -56,7 +56,7 @@ public class BoundStatementIT {
   @Ignore
   public void should_not_allow_unset_value_on_bound_statement_when_protocol_less_than_v4() {
     // TODO reenable this if JAVA-1584 is fixed.
-    try (Cluster v3Cluster = ClusterUtils.newCluster(ccm, "protocol.version = V3")) {
+    try (Cluster<CqlSession> v3Cluster = ClusterUtils.newCluster(ccm, "protocol.version = V3")) {
       CqlIdentifier keyspace = ClusterUtils.uniqueKeyspaceId();
       DriverConfigProfile slowProfile = ClusterUtils.slowProfile(v3Cluster);
       ClusterUtils.createKeyspace(v3Cluster, keyspace, slowProfile);
