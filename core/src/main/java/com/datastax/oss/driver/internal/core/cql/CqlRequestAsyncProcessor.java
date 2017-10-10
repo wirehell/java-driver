@@ -24,9 +24,10 @@ import com.datastax.oss.driver.internal.core.session.DefaultSession;
 import com.datastax.oss.driver.internal.core.session.RequestHandler;
 import com.datastax.oss.driver.internal.core.session.RequestProcessor;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class CqlRequestAsyncProcessor
-    implements RequestProcessor<Statement<?>, CompletableFuture<AsyncResultSet>> {
+    implements RequestProcessor<Statement<?>, CompletionStage<AsyncResultSet>> {
 
   @Override
   public boolean canProcess(Request request, GenericType<?> resultType) {
@@ -34,7 +35,7 @@ public class CqlRequestAsyncProcessor
   }
 
   @Override
-  public RequestHandler<Statement<?>, CompletableFuture<AsyncResultSet>> newHandler(
+  public RequestHandler<Statement<?>, CompletionStage<AsyncResultSet>> newHandler(
       Statement<?> request,
       DefaultSession session,
       InternalDriverContext context,
