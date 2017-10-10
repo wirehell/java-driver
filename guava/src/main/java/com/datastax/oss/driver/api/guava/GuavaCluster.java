@@ -18,22 +18,10 @@ package com.datastax.oss.driver.api.guava;
 import com.datastax.oss.driver.api.core.Cluster;
 import com.datastax.oss.driver.api.core.session.CqlSession;
 import com.datastax.oss.driver.internal.core.ClusterWrapper;
-import com.datastax.oss.driver.internal.core.DefaultCluster;
-import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
-import com.datastax.oss.driver.internal.guava.ListenableFutureUtils;
-import com.google.common.util.concurrent.ListenableFuture;
-import java.net.InetSocketAddress;
-import java.util.Set;
 
 public class GuavaCluster extends ClusterWrapper<CqlSession, GuavaSession> {
 
-  public static ListenableFuture<GuavaCluster> init(
-      InternalDriverContext context, Set<InetSocketAddress> contactPoints) {
-    return ListenableFutureUtils.toListenableFuture(
-        DefaultCluster.init(context, contactPoints).thenApply(GuavaCluster::new));
-  }
-
-  private GuavaCluster(Cluster<CqlSession> delegate) {
+  GuavaCluster(Cluster<CqlSession> delegate) {
     super(delegate);
   }
 
