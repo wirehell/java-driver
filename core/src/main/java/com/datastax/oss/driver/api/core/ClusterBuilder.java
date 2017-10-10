@@ -160,14 +160,16 @@ public abstract class ClusterBuilder<SelfT extends ClusterBuilder, ClusterT> {
     Set<InetSocketAddress> contactPoints =
         ContactPoints.merge(programmaticContactPoints, configContactPoints);
 
-    return DefaultCluster.init((InternalDriverContext) buildContext(configLoader), contactPoints);
+    return DefaultCluster.init(
+        (InternalDriverContext) buildContext(configLoader, typeCodecs), contactPoints);
   }
 
   /**
    * This <b>must</b> return an instance of {@code InternalDriverContext} (it's not expressed
    * directly in the signature to avoid leaking that type through the protected API).
    */
-  protected DriverContext buildContext(DriverConfigLoader configLoader) {
+  protected DriverContext buildContext(
+      DriverConfigLoader configLoader, List<TypeCodec<?>> typeCodecs) {
     return new DefaultDriverContext(configLoader, typeCodecs);
   }
 
