@@ -33,9 +33,10 @@ import java.util.concurrent.CompletionStage;
  *     CqlSession}.
  */
 public interface Cluster<SessionT extends Session> extends AsyncAutoCloseable {
+
   /** Returns a builder to create a new instance of the default implementation. */
-  static ClusterBuilder builder() {
-    return new ClusterBuilder();
+  static DefaultClusterBuilder builder() {
+    return new DefaultClusterBuilder();
   }
 
   /**
