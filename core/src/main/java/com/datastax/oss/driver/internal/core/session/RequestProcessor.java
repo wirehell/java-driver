@@ -40,15 +40,6 @@ public interface RequestProcessor<RequestT extends Request, ResultT> {
    */
   boolean canProcess(Request request, GenericType<?> resultType);
 
-  /**
-   * Whether the processor can handle the given request.
-   *
-   * <p>Note that this does not imply that this processor can handle the given result type. This
-   * method is meant for use by implementations that compose other processors and is not used by the
-   * driver directly.
-   */
-  boolean canProcess(Request request);
-
   /** Builds a new handler to process a given request. */
   RequestHandler<RequestT, ResultT> newHandler(
       RequestT request,

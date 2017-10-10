@@ -31,20 +31,20 @@ public class GuavaRequestAsyncProcessor<T extends Request, U>
 
   private final GenericType resultType;
 
+  private final Class<?> requestClass;
+
   public GuavaRequestAsyncProcessor(
-      RequestProcessor<T, CompletionStage<U>> subProcessor, GenericType resultType) {
+      RequestProcessor<T, CompletionStage<U>> subProcessor,
+      Class<?> requestClass,
+      GenericType resultType) {
     this.subProcessor = subProcessor;
+    this.requestClass = requestClass;
     this.resultType = resultType;
   }
 
   @Override
-  public boolean canProcess(Request request) {
-    return subProcessor.canProcess(request);
-  }
-
-  @Override
   public boolean canProcess(Request request, GenericType resultType) {
-    return canProcess(request) && resultType.equals(this.resultType);
+    return requestClass.isInstance(request) && resultType.equals(this.resultType);
   }
 
   @Override

@@ -30,7 +30,10 @@ public class TestGuava {
       GuavaSession session = cluster.connect();
 
       CountDownLatch latch = new CountDownLatch(1);
-      ListenableFuture<AsyncResultSet> result = session.executeAsync("select * from system.local");
+      ListenableFuture<AsyncResultSet> result =
+          Futures.transformAsync(
+              session.prepareAsync("select host_id from system.local where key = ?"),
+              prepared -> session.executeAsync(prepared.bind("local")));
 
       Futures.addCallback(
           result,

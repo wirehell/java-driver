@@ -37,13 +37,8 @@ public class CqlPrepareSyncProcessor
   }
 
   @Override
-  public boolean canProcess(Request request) {
-    return request instanceof PrepareRequest;
-  }
-
-  @Override
   public boolean canProcess(Request request, GenericType<?> resultType) {
-    return canProcess(request) && resultType.equals(PrepareRequest.SYNC);
+    return request instanceof PrepareRequest && resultType.equals(PrepareRequest.SYNC);
   }
 
   @Override

@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.guava.GuavaSession;
+import com.datastax.oss.driver.internal.core.cql.DefaultPrepareRequest;
 import com.datastax.oss.driver.internal.core.session.SessionWrapper;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -49,7 +50,7 @@ public class DefaultGuavaSession extends SessionWrapper implements GuavaSession 
 
   @Override
   public ListenableFuture<PreparedStatement> prepareAsync(SimpleStatement statement) {
-    return this.execute(statement, ASYNC_PREPARED);
+    return this.execute(new DefaultPrepareRequest(statement), ASYNC_PREPARED);
   }
 
   @Override

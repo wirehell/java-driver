@@ -16,6 +16,8 @@
 package com.datastax.oss.driver.internal.guava;
 
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.cql.PrepareRequest;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import com.datastax.oss.driver.internal.core.cql.CqlPrepareAsyncProcessor;
@@ -48,8 +50,9 @@ public class DefaultGuavaDriverContext extends DefaultDriverContext {
         clusterName(),
         new CqlRequestSyncProcessor(),
         new CqlPrepareSyncProcessor(preparedStatementsCache),
-        new GuavaRequestAsyncProcessor<>(cqlRequestAsyncProcessor, DefaultGuavaSession.ASYNC),
         new GuavaRequestAsyncProcessor<>(
-            cqlPrepareAsyncProcessor, DefaultGuavaSession.ASYNC_PREPARED));
+            cqlRequestAsyncProcessor, Statement.class, DefaultGuavaSession.ASYNC),
+        new GuavaRequestAsyncProcessor<>(
+            cqlPrepareAsyncProcessor, PrepareRequest.class, DefaultGuavaSession.ASYNC_PREPARED));
   }
 }

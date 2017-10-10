@@ -29,13 +29,8 @@ public class CqlRequestAsyncProcessor
     implements RequestProcessor<Statement<?>, CompletionStage<AsyncResultSet>> {
 
   @Override
-  public boolean canProcess(Request request) {
-    return request instanceof Statement;
-  }
-
-  @Override
   public boolean canProcess(Request request, GenericType<?> resultType) {
-    return canProcess(request) && resultType.equals(Statement.ASYNC);
+    return request instanceof Statement && resultType.equals(Statement.ASYNC);
   }
 
   @Override
