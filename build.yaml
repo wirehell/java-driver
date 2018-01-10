@@ -9,6 +9,8 @@ schedules:
         # Exclude java6 with all versions except latest
         - java: openjdk6
           cassandra: ['1.2', '2.0', '2.1', '2.2', '3.0']
+        # Exclude all DSE versions
+        - cassandra: ["/dse-.*/"]
     env_vars: |
       TEST_GROUP="short"
     disable_commit_status: true
@@ -43,6 +45,9 @@ cassandra:
   - '2.2'
   - '3.0'
   - '3.11'
+  - 'dse-4.8'
+  - 'dse-5.0'
+  - 'dse-5.1'
 build:
   - script: |
       . /usr/local/bin/jdk_switcher.sh
