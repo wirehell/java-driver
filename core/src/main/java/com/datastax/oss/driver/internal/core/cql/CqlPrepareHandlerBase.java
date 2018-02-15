@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.ProtocolVersion;
+import com.datastax.oss.driver.api.core.RequestThrottlingException;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfig;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
@@ -34,11 +35,13 @@ import com.datastax.oss.driver.api.core.servererrors.ProtocolError;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.internal.core.ProtocolFeature;
 import com.datastax.oss.driver.internal.core.ProtocolVersionRegistry;
-import com.datastax.oss.driver.internal.core.adminrequest.AdminRequestHandler;
+import com.datastax.oss.driver.internal.core.adminrequest.ThrottledAdminRequestHandler;
 import com.datastax.oss.driver.internal.core.channel.DriverChannel;
 import com.datastax.oss.driver.internal.core.channel.ResponseCallback;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.core.session.DefaultSession;
+import com.datastax.oss.driver.internal.core.session.throttling.RequestThrottler;
+import com.datastax.oss.driver.internal.core.session.throttling.Throttled;
 import com.datastax.oss.driver.internal.core.util.Loggers;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.protocol.internal.Frame;
@@ -68,7 +71,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Handles the lifecycle of the preparation of a CQL statement. */
-public abstract class CqlPrepareHandlerBase {
+public abstract class CqlPrepareHandlerBase implements Throttled {
 
   private static final Logger LOG = LoggerFactory.getLogger(CqlPrepareHandlerBase.class);
 
@@ -84,6 +87,7 @@ public abstract class CqlPrepareHandlerBase {
   private final Duration timeout;
   private final ScheduledFuture<?> timeoutFuture;
   private final RetryPolicy retryPolicy;
+  private final RequestThrottler throttler;
   private final Boolean prepareOnAllNodes;
   private volatile InitialPrepareCallback initialCallback;
 
@@ -147,6 +151,13 @@ public abstract class CqlPrepareHandlerBase {
     this.timeoutFuture = scheduleTimeout(timeout);
     this.retryPolicy = context.retryPolicy();
     this.prepareOnAllNodes = configProfile.getBoolean(DefaultDriverOption.PREPARE_ON_ALL_NODES);
+
+    this.throttler = context.requestThrottler();
+    this.throttler.register(this);
+  }
+
+  @Override
+  public void onThrottleReady() {
     sendRequest(null, 0);
   }
 
@@ -211,6 +222,10 @@ public abstract class CqlPrepareHandlerBase {
   }
 
   private void setFinalResult(Prepared prepared) {
+
+    // Whatever happens below, we're done with this stream id
+    throttler.signalSuccess(this);
+
     DefaultPreparedStatement newStatement =
         Conversions.toPreparedStatement(prepared, request, context);
 
@@ -282,10 +297,15 @@ public abstract class CqlPrepareHandlerBase {
       LOG.debug("[{}] Could not get a channel to reprepare on {}, skipping", logPrefix, node);
       return CompletableFuture.completedFuture(null);
     } else {
-      AdminRequestHandler handler =
-          new AdminRequestHandler(
-              channel, message, request.getCustomPayload(), timeout, logPrefix, message.toString());
+      ThrottledAdminRequestHandler handler =
+          new ThrottledAdminRequestHandler(
+              channel,
+              message,
+              request.getCustomPayload(),
+              timeout,
 
+             throttler, logPrefix,
+              message.toString());
       return handler
           .start()
           .handle(
@@ -301,9 +321,19 @@ public abstract class CqlPrepareHandlerBase {
     }
   }
 
+  @Override
+  public void onThrottleFailure(RequestThrottlingException error) {
+    setFinalError(error);
+  }
+
   private void setFinalError(Throwable error) {
     if (result.completeExceptionally(error)) {
       cancelTimeout();
+      if (error instanceof DriverTimeoutException) {
+        throttler.signalTimeout(this);
+      } else if (!(error instanceof RequestThrottlingException)) {
+        throttler.signalError(this, error);
+      }
     }
   }
 

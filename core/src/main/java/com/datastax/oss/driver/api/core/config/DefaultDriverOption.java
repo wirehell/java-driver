@@ -61,6 +61,11 @@ public enum DefaultDriverOption implements DriverOption {
   REQUEST_TRACE_ATTEMPTS("request.trace.attempts", true),
   REQUEST_TRACE_INTERVAL("request.trace.interval", true),
   REQUEST_TRACE_CONSISTENCY("request.trace.consistency", true),
+  REQUEST_THROTTLER_CLASS("request.throttler.class", true),
+  REQUEST_THROTTLER_MAX_CONCURRENT_REQUESTS("request.throttler.max-concurrent-requests", false),
+  REQUEST_THROTTLER_MAX_REQUESTS_PER_SECOND("request.throttler.max-requests-per-second", false),
+  REQUEST_THROTTLER_MAX_QUEUE_SIZE("request.throttler.max-queue-size", false),
+  REQUEST_THROTTLER_DRAIN_INTERVAL("request.throttler.drain-interval", false),
 
   CONTROL_CONNECTION_TIMEOUT("connection.control-connection.timeout", true),
   CONTROL_CONNECTION_AGREEMENT_INTERVAL(
