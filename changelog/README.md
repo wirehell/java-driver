@@ -1,5 +1,10 @@
 ## Changelog
 
+### 3.5.0 (In progress)
+
+- [documentation] JAVA-1380: Add FAQ entry for errors arising from incompatibilities.
+
+
 ### 3.4.0
 
 - [improvement] JAVA-1671: Remove unnecessary test on prepared statement metadata.
