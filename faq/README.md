@@ -260,24 +260,34 @@ If properly used, the following log message will be logged at INFO on startup:
 
 ### Why am I encountering `NoSuchMethodFoundException`, `NoClassDefFoundError`, or `VerifyError`s and how do I avoid them?
 
-Some monitoring and agent-based tools such as [DynaTrace] offer solutions that instrument the driver to observe
-and record useful metrics such as request rates, latencies and more.  It is possible that the tool
+Incompatibilities between the java driver and other libraries may cause these exceptions to surface in your
+application at runtime.  
+
+It could be that an older or newer version of a library that the driver depends on, such as Netty
+or Guava, may be present in your application's classpath.  If you are using maven or another dependency
+management tool, the tool should offer a command, such as `mvn dependency:tree` to identify the dependecies
+in your project to help you understand the dependent versions across the various libraries you use in your
+project.  You may also want to evaluate your classpath to see if there are multiple jars present for a library,
+but with different versions, which could cause compatibility issues.  In addition, consider evaluating
+using the logback logging framework, which provides the capability to include [packaging data] for classes
+in stack traces.
+
+For Netty in particular, the driver offers an alternative artifact that shades its netty dependency,
+allowing you to use newer or older versions of netty in your application without impacting the driver.
+See [Using the shaded JAR] for more details.
+
+Another possibility could be that another library you are using depends on a different version of the
+driver.  In this case, observe the stacktrace of the exception to see which library is attempting to use
+the driver.  To identify compatible versions, check that library's dependency on the driver to understand
+what version is compatible.
+
+Finally, some monitoring and agent-based tools such as [DynaTrace] offer solutions that instrument the driver to
+observe and record useful metrics such as request rates, latencies and more.  It is possible that the tool
 you are using is not compatible with the version of the java driver you are using.  In this case, check to
 see if a newer version of that tool is available that works with this version of the driver.  If no such
 version is available, you may want to reach out to the maintainer of that tool to request that they provide
 an update with compatibility to the driver version you are using.
 
-Another possibility could simply be that another library you are using depends on a different version of the
-driver.  In this case, observe the stacktrace of the exception to see which library is attempting to use
-the driver.  To identify compatible versions, check that libraries' dependency on the driver to understand
-what version is compatible.
-
-Finally, it could be that an older or newer version of a library that the driver depends on, such as Netty
-or Guava, may be present in your application's classpath.  If you are using maven or another dependency
-management tool, the tool should offer a command, such as `mvn dependency:tree` to identify the dependecies
-in your project to help you understand the dependent versions across the various libraries you use in your
-project.  You may also want to evaluate your classpath to see if there are multiple jars present for a library,
-but with different versions, which could cause compatibility issues.
 
 [Blobs.java]: https://github.com/datastax/java-driver/tree/3.4.0/driver-examples/src/main/java/com/datastax/driver/examples/datatypes/Blobs.java
 [CASSANDRA-7304]: https://issues.apache.org/jira/browse/CASSANDRA-7304
@@ -287,3 +297,5 @@ but with different versions, which could cause compatibility issues.
 [Semaphore]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Semaphore.html
 [Futures.allAsList]: https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/Futures.html#allAsList(java.lang.Iterable)
 [DynaTrace]: https://www.dynatrace.com/
+[packaging data]: https://logback.qos.ch/reasonsToSwitch.html#packagingData
+[Ulsing the shaded JAR]: ../manual/shaded_jar
