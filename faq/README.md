@@ -298,4 +298,4 @@ an update with compatibility to the driver version you are using.
 [Futures.allAsList]: https://google.github.io/guava/releases/19.0/api/docs/com/google/common/util/concurrent/Futures.html#allAsList(java.lang.Iterable)
 [DynaTrace]: https://www.dynatrace.com/
 [packaging data]: https://logback.qos.ch/reasonsToSwitch.html#packagingData
-[Ulsing the shaded JAR]: ../manual/shaded_jar
+[Using the shaded JAR]: ../manual/shaded_jar
