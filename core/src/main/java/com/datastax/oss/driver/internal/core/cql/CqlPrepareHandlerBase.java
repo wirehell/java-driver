@@ -303,8 +303,8 @@ public abstract class CqlPrepareHandlerBase implements Throttled {
               message,
               request.getCustomPayload(),
               timeout,
-
-             throttler, logPrefix,
+              throttler,
+              logPrefix,
               message.toString());
       return handler
           .start()
