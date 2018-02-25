@@ -272,8 +272,8 @@ but with different versions, which could cause compatibility issues.  In additio
 using the logback logging framework, which provides the capability to include [packaging data] for classes
 in stack traces.
 
-For Netty in particular, the driver offers an alternative artifact that shades its netty dependency,
-allowing you to use newer or older versions of netty in your application without impacting the driver.
+For Netty in particular, the driver offers an alternative artifact that shades its Netty dependency,
+allowing you to use newer or older versions of Netty in your application without impacting the driver.
 See [Using the shaded JAR] for more details.
 
 Another possibility could be that another library you are using depends on a different version of the
