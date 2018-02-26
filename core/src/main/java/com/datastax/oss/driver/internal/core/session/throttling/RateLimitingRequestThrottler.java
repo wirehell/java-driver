@@ -46,6 +46,7 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
   @VisibleForTesting final AtomicReference<State> stateRef;
   @VisibleForTesting final Deque<Throttled> queue = new ConcurrentLinkedDeque<>();
 
+  @SuppressWarnings("unused")
   public RateLimitingRequestThrottler(DriverContext context) {
     this(context, System::nanoTime);
   }
