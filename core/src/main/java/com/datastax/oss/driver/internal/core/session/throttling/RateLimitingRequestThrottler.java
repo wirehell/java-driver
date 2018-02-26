@@ -37,22 +37,29 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
   private static final Logger LOG = LoggerFactory.getLogger(RateLimitingRequestThrottler.class);
 
   private final String logPrefix;
+  private final NanoClock clock;
   private final int maxQueueSize;
   private final long drainIntervalNanos;
 
   private final EventExecutor scheduler;
 
-  private final AtomicReference<State> stateRef;
-  private final Deque<Throttled> queue = new ConcurrentLinkedDeque<>();
+  @VisibleForTesting final AtomicReference<State> stateRef;
+  @VisibleForTesting final Deque<Throttled> queue = new ConcurrentLinkedDeque<>();
 
   public RateLimitingRequestThrottler(DriverContext context) {
+    this(context, System::nanoTime);
+  }
+
+  @VisibleForTesting
+  RateLimitingRequestThrottler(DriverContext context, NanoClock clock) {
     this.logPrefix = context.sessionName();
+    this.clock = clock;
 
     DriverConfigProfile config = context.config().getDefaultProfile();
 
     int maxRequestsPerSecond =
         config.getInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_REQUESTS_PER_SECOND);
-    this.stateRef = new AtomicReference<>(State.initial(maxRequestsPerSecond, System.nanoTime()));
+    this.stateRef = new AtomicReference<>(State.initial(maxRequestsPerSecond, clock.nanoTime()));
     this.maxQueueSize = config.getInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE);
     Duration drainInterval =
         config.getDuration(DefaultDriverOption.REQUEST_THROTTLER_DRAIN_INTERVAL);
@@ -73,7 +80,7 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
   public void register(Throttled request) {
     while (true) {
       State state = stateRef.get();
-      long now = System.nanoTime();
+      long now = clock.nanoTime();
       if (state.closed) {
         LOG.trace("[{}] Rejecting request after shutdown", logPrefix);
         fail(request, "The session is shutting down");
@@ -117,7 +124,7 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
         return;
       }
 
-      long now = System.nanoTime();
+      long now = clock.nanoTime();
       int toDequeue = state.canAcquire(now, state.queueSize);
       if (toDequeue == 0) {
         LOG.trace("[{}] No capacity to dequeue, rescheduling drain task", logPrefix);

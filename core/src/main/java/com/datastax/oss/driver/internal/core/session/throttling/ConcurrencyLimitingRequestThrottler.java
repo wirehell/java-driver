@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.RequestThrottlingException;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.context.DriverContext;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,8 +36,8 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
   private final int maxConcurrentRequests;
   private final int maxQueueSize;
 
-  private final AtomicReference<State> stateRef = new AtomicReference<>(State.INITIAL);
-  private final Deque<Throttled> queue = new ConcurrentLinkedDeque<>();
+  @VisibleForTesting final AtomicReference<State> stateRef = new AtomicReference<>(State.INITIAL);
+  @VisibleForTesting final Deque<Throttled> queue = new ConcurrentLinkedDeque<>();
 
   public ConcurrencyLimitingRequestThrottler(DriverContext context) {
     this.logPrefix = context.sessionName();
@@ -165,7 +166,8 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
     request.onThrottleFailure(new RequestThrottlingException(message));
   }
 
-  private static class State {
+  @VisibleForTesting
+  static class State {
 
     static final State INITIAL = new State(0, 0, false);
 
