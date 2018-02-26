@@ -45,6 +45,7 @@ public class ThrottledAdminRequestHandler extends AdminRequestHandler implements
   @Override
   public CompletionStage<AdminResult> start() {
     // Don't write request yet, wait for green light from throttler
+    throttler.register(this);
     return result;
   }
 
