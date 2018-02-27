@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -92,6 +93,20 @@ public class TypeSafeDriverConfigTest {
 
     assertThat(base.getInt(MockOptions.REQUIRED_INT)).isEqualTo(42);
     assertThat(derived.getInt(MockOptions.REQUIRED_INT)).isEqualTo(43);
+  }
+
+  @Test
+  public void should_be_able_to_fecth_maph() {
+    TypeSafeDriverConfig config =
+        parse(
+            "required_int = 42 \n auth_provider { auth_thing_one= one \n auth_thing_two = two \n auth_thing_three = three}");
+    DriverConfigProfile base = config.getDefaultProfile();
+    // DriverConfigProfile derived = base.withInt(MockOptions.OPTIONAL_AUTH, 43);
+    Map<String, String> map = base.getMap(MockOptions.OPTIONAL_AUTH);
+    assertThat(map.entrySet().size()).isEqualTo(3);
+    assertThat(map.get("auth_thing_one")).isEqualTo("one");
+    assertThat(map.get("auth_thing_two")).isEqualTo("two");
+    assertThat(map.get("auth_thing_three")).isEqualTo("three");
   }
 
   @Test

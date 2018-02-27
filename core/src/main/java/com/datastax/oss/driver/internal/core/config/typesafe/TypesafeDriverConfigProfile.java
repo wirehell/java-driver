@@ -20,10 +20,14 @@ import com.datastax.oss.driver.api.core.config.DriverOption;
 import com.google.common.collect.MapMaker;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
+import com.typesafe.config.ConfigValueType;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -70,6 +74,19 @@ public abstract class TypesafeDriverConfigProfile implements DriverConfigProfile
   @Override
   public Duration getDuration(DriverOption option) {
     return getCached(option.getPath(), getEffectiveOptions()::getDuration);
+  }
+
+  @Override
+  public Map<String, String> getMap(DriverOption option) {
+    Config subConfig = getCached(option.getPath(), getEffectiveOptions()::getConfig);
+    Map<String, String> map = new HashMap<>();
+    Set<Map.Entry<String, ConfigValue>> entrySet = subConfig.entrySet();
+    for (Map.Entry<String, ConfigValue> entry : entrySet) {
+      if (entry.getValue().valueType().equals(ConfigValueType.STRING)) {
+        map.put(entry.getKey(), (String) entry.getValue().unwrapped());
+      }
+    }
+    return map;
   }
 
   @Override
