@@ -1,5 +1,10 @@
 ## Changelog
 
+### 3.5.0 (in progress)
+
+- [improvement] JAVA-1735: Log driver version on first use.
+
+
 ### 3.4.0
 
 - [improvement] JAVA-1671: Remove unnecessary test on prepared statement metadata.
