@@ -210,7 +210,7 @@ public class Cluster implements Closeable {
      */
     public static void logDriverVersion() {
         Logger core = LoggerFactory.getLogger("com.datastax.driver.core");
-        core.info("DataStax Java driver for Apache Cassandra version {}", getDriverVersion());
+        core.info("DataStax Java driver {} for Apache Cassandra", getDriverVersion());
     }
 
     /**
