@@ -162,8 +162,8 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
   }
 
   @Override
-  public boolean signalError(Throttled request, Throwable error) {
-    return true;
+  public void signalError(Throttled request, Throwable error) {
+    // nothing to do
   }
 
   @Override

@@ -40,9 +40,8 @@ public class PassThroughRequestThrottler implements RequestThrottler {
   }
 
   @Override
-  public boolean signalError(Throttled request, Throwable error) {
-    // Always rethrow (this implementation does not restart requests)
-    return true;
+  public void signalError(Throttled request, Throwable error) {
+    // nothing to do
   }
 
   @Override

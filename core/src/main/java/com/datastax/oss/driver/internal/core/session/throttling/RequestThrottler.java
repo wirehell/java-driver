@@ -33,14 +33,10 @@ public interface RequestThrottler extends Closeable {
   void signalSuccess(Throttled request);
 
   /**
-   * Signals that a request has failed. This indicates to the throttler that the current request
-   * might be restarted, or another one might be started.
-   *
-   * @return whether the error should be rethrown to the client. If {@code false}, it means the
-   *     throttler will invoke {@link Throttled#onThrottleReady()} again at some point in the
-   *     future.
+   * Signals that a request has failed. This indicates to the throttler that another request might
+   * be started.
    */
-  boolean signalError(Throttled request, Throwable error);
+  void signalError(Throttled request, Throwable error);
 
   /**
    * Signals that a request has timed out. This indicates to the throttler that this request has

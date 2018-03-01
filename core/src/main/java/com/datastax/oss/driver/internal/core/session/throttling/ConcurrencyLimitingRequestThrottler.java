@@ -93,9 +93,8 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
   }
 
   @Override
-  public boolean signalError(Throttled request, Throwable error) {
+  public void signalError(Throttled request, Throwable error) {
     onRequestDone();
-    return true;
   }
 
   @Override
