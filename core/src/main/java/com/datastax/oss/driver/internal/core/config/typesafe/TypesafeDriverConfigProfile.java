@@ -17,6 +17,7 @@ package com.datastax.oss.driver.internal.core.config.typesafe;
 
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.config.DriverOption;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -25,7 +26,6 @@ import com.typesafe.config.ConfigValueFactory;
 import com.typesafe.config.ConfigValueType;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,19 +77,6 @@ public abstract class TypesafeDriverConfigProfile implements DriverConfigProfile
   }
 
   @Override
-  public Map<String, String> getMap(DriverOption option) {
-    Config subConfig = getCached(option.getPath(), getEffectiveOptions()::getConfig);
-    Map<String, String> map = new HashMap<>();
-    Set<Map.Entry<String, ConfigValue>> entrySet = subConfig.entrySet();
-    for (Map.Entry<String, ConfigValue> entry : entrySet) {
-      if (entry.getValue().valueType().equals(ConfigValueType.STRING)) {
-        map.put(entry.getKey(), (String) entry.getValue().unwrapped());
-      }
-    }
-    return map;
-  }
-
-  @Override
   public DriverConfigProfile withDuration(DriverOption option, Duration value) {
     return with(option, value);
   }
@@ -110,8 +97,35 @@ public abstract class TypesafeDriverConfigProfile implements DriverConfigProfile
   }
 
   @Override
+  public Map<String, String> getStringMap(DriverOption option) {
+    Config subConfig = getCached(option.getPath(), getEffectiveOptions()::getConfig);
+    ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+    for (Map.Entry<String, ConfigValue> entry : subConfig.entrySet()) {
+      if (entry.getValue().valueType().equals(ConfigValueType.STRING)) {
+        builder.put(entry.getKey(), (String) entry.getValue().unwrapped());
+      }
+    }
+    return builder.build();
+  }
+
+  @Override
   public DriverConfigProfile withStringList(DriverOption option, List<String> value) {
     return with(option, value);
+  }
+
+  @Override
+  public DriverConfigProfile withStringMap(DriverOption option, Map<String, String> map) {
+    Base base = getBaseProfile();
+    // Add the new option to any already derived options
+    Config newAdded = getAddedOptions();
+    for (String key : map.keySet()) {
+      newAdded =
+          newAdded.withValue(
+              option.getPath() + "." + key, ConfigValueFactory.fromAnyRef(map.get(key)));
+    }
+    Derived derived = new Derived(base, newAdded);
+    base.register(derived);
+    return derived;
   }
 
   @Override

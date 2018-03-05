@@ -43,8 +43,6 @@ public interface DriverConfigProfile {
 
   int getInt(DriverOption option);
 
-  Map<String, String> getMap(DriverOption option);
-
   DriverConfigProfile withInt(DriverOption option, int value);
 
   String getString(DriverOption option);
@@ -53,8 +51,11 @@ public interface DriverConfigProfile {
 
   List<String> getStringList(DriverOption option);
 
+  Map<String, String> getStringMap(DriverOption option);
+
   DriverConfigProfile withStringList(DriverOption option, List<String> value);
 
+  DriverConfigProfile withStringMap(DriverOption option, Map<String, String> value);
   /** Returns a size in bytes. */
   long getBytes(DriverOption option);
 

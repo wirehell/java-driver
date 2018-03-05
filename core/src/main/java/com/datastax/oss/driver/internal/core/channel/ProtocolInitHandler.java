@@ -292,14 +292,12 @@ class ProtocolInitHandler extends ConnectInitHandler {
         } else {
           failOnUnexpected(response);
         }
-      } catch (Exception e) {
-        if (e instanceof AuthenticationException) {
-          fail(e);
-        } else {
-          fail(
-              new AuthenticationException(
-                  channel.remoteAddress(), "Unexpected exception in encoutered in response ", e));
-        }
+      } catch (AuthenticationException e) {
+        fail(e);
+      } catch (Throwable t) {
+        fail(
+            new AuthenticationException(
+                channel.remoteAddress(), "Unexpected exception in encoutered in response ", t));
       }
     }
 
