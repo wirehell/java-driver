@@ -20,9 +20,9 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +36,14 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
   private final int maxConcurrentRequests;
   private final int maxQueueSize;
 
-  @VisibleForTesting final AtomicReference<State> stateRef = new AtomicReference<>(State.INITIAL);
-  @VisibleForTesting final Deque<Throttled> queue = new ConcurrentLinkedDeque<>();
+  private final ReentrantLock lock = new ReentrantLock();
+
+  // guarded by lock
+  private int concurrentRequests;
+  // guarded by lock
+  private Deque<Throttled> queue = new ArrayDeque<>();
+  // guarded by lock
+  private boolean closed;
 
   public ConcurrencyLimitingRequestThrottler(DriverContext context) {
     this.logPrefix = context.sessionName();
@@ -54,26 +60,19 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
 
   @Override
   public void register(Throttled request) {
-    while (true) {
-      State state = stateRef.get();
-      if (state.closed) {
+    lock.lock();
+    try {
+      if (closed) {
         LOG.trace("[{}] Rejecting request after shutdown", logPrefix);
         fail(request, "The session is shutting down");
-        return;
-      } else if (state.queueSize == 0 && state.concurrentRequests < maxConcurrentRequests) {
+      } else if (queue.isEmpty() && concurrentRequests < maxConcurrentRequests) {
         // We have capacity for one more concurrent request
-        if (stateRef.compareAndSet(state, state.acquirePermit())) {
-          LOG.trace("[{}] Starting newly registered request", logPrefix);
-          request.onThrottleReady();
-          return;
-        }
-      } else if (state.queueSize < maxQueueSize) {
-        // We don't have capacity but there's some room left in the queue
-        if (stateRef.compareAndSet(state, state.enqueue())) {
-          LOG.trace("[{}] Enqueuing request", logPrefix);
-          queue.add(request);
-          return;
-        }
+        LOG.trace("[{}] Starting newly registered request", logPrefix);
+        concurrentRequests += 1;
+        request.onThrottleReady();
+      } else if (queue.size() < maxQueueSize) {
+        LOG.trace("[{}] Enqueuing request", logPrefix);
+        queue.add(request);
       } else {
         LOG.trace("[{}] Rejecting request because of full queue", logPrefix);
         fail(
@@ -82,127 +81,91 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
                 "The session has reached its maximum capacity "
                     + "(concurrent requests: %d, queue size: %d)",
                 maxConcurrentRequests, maxQueueSize));
-        return;
       }
+    } finally {
+      lock.unlock();
     }
   }
 
   @Override
   public void signalSuccess(Throttled request) {
-    onRequestDone();
+    lock.lock();
+    try {
+      onRequestDone();
+    } finally {
+      lock.unlock();
+    }
   }
 
   @Override
   public void signalError(Throttled request, Throwable error) {
-    onRequestDone();
+    signalSuccess(request); // not treated differently
   }
 
   @Override
   public void signalTimeout(Throttled request) {
-    if (queue.remove(request)) { // The request timed out before it was active
-      while (true) {
-        State state = stateRef.get();
-        if (state.closed) {
-          // Put it back because close() expects state.queueSize to match the queue exactly
-          queue.add(request);
-          return;
-        } else if (stateRef.compareAndSet(state, state.dequeue())) {
+    lock.lock();
+    try {
+      if (!closed) {
+        if (queue.remove(request)) { // The request timed out before it was active
           LOG.trace("[{}] Removing timed out request from the queue", logPrefix);
-          return;
+        } else {
+          onRequestDone();
         }
       }
-    } else {
-      onRequestDone();
+    } finally {
+      lock.unlock();
     }
   }
 
   private void onRequestDone() {
-    // An active request just finished so we have capacity for more
-    while (true) {
-      State state = stateRef.get();
-      if (state.closed) {
-        return;
-      } else if (state.queueSize == 0) {
-        // No other request was waiting, simply decrease the count
-        if (stateRef.compareAndSet(state, state.releasePermit())) {
-          return;
-        }
-      } else if (stateRef.compareAndSet(state, state.dequeue())) {
-        // Another request was waiting, start it (don't change the count because we released a
-        // permit but immediately re-acquired it).
-        Throttled request = queue.poll();
-        assert request != null;
+    assert lock.isHeldByCurrentThread();
+    if (!closed) {
+      if (queue.isEmpty()) {
+        concurrentRequests -= 1;
+      } else {
         LOG.trace("[{}] Starting dequeued request", logPrefix);
-        request.onThrottleReady();
-        return;
+        queue.poll().onThrottleReady();
+        // don't touch concurrentRequests since we finished one but started another
       }
     }
   }
 
   @Override
   public void close() {
-    State state = stateRef.updateAndGet(State::close);
-    // We can race with register() or onRequestDone() and have another thread enqueue/dequeue while
-    // we're draining the queue. So wait for the exact number of elements at the time we closed
-    // (any enqueue()/dequeue() call on the state happened-before marking it as closed).
-    // This might spin-wait, but only for a few elements.
-    int remaining = state.queueSize;
-    while (remaining > 0) {
-      Throttled request = queue.poll();
-      if (request != null) {
+    lock.lock();
+    try {
+      closed = true;
+      LOG.trace("[{}] Rejecting {} queued requests after shutdown", logPrefix, queue.size());
+      for (Throttled request : queue) {
         fail(request, "The session is shutting down");
-        remaining -= 1;
-        LOG.trace(
-            "[{}] Rejecting queued request after shutdown, remaining = {}", logPrefix, remaining);
-        if (remaining == 0) {
-          return;
-        }
       }
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @VisibleForTesting
+  int getConcurrentRequests() {
+    lock.lock();
+    try {
+      return concurrentRequests;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @VisibleForTesting
+  Deque<Throttled> getQueue() {
+    lock.lock();
+    try {
+      return queue;
+    } finally {
+      lock.unlock();
     }
   }
 
   private static void fail(Throttled request, String message) {
     request.onThrottleFailure(new RequestThrottlingException(message));
-  }
-
-  @VisibleForTesting
-  static class State {
-
-    static final State INITIAL = new State(0, 0, false);
-
-    final int concurrentRequests;
-    final int queueSize;
-    final boolean closed;
-
-    State(int concurrentRequests, int queueSize, boolean closed) {
-      this.concurrentRequests = concurrentRequests;
-      this.queueSize = queueSize;
-      this.closed = closed;
-    }
-
-    State acquirePermit() {
-      assert !closed && queueSize == 0;
-      return new State(concurrentRequests + 1, queueSize, false);
-    }
-
-    State releasePermit() {
-      assert !closed && queueSize == 0 && concurrentRequests > 0;
-      return new State(concurrentRequests - 1, 0, false);
-    }
-
-    State enqueue() {
-      assert !closed;
-      return new State(concurrentRequests, queueSize + 1, false);
-    }
-
-    State dequeue() {
-      assert !closed && queueSize > 0;
-      return new State(concurrentRequests, queueSize - 1, false);
-    }
-
-    State close() {
-      assert !closed;
-      return new State(concurrentRequests, queueSize, true);
-    }
   }
 }

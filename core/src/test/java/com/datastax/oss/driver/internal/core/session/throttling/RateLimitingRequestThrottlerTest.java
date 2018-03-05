@@ -23,7 +23,6 @@ import com.datastax.oss.driver.api.core.config.DriverConfig;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.core.context.NettyOptions;
-import com.datastax.oss.driver.internal.core.session.throttling.RateLimitingRequestThrottler.State;
 import com.datastax.oss.driver.internal.core.util.concurrent.ScheduledTaskCapturingEventLoop;
 import com.google.common.collect.Lists;
 import io.netty.channel.EventLoopGroup;
@@ -93,9 +92,8 @@ public class RateLimitingRequestThrottlerTest {
 
     // Then
     assertThat(request.started).isSuccess();
-    State state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(4);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getStoredPermits()).isEqualTo(4);
+    assertThat(throttler.getQueue()).isEmpty();
   }
 
   @Test
@@ -104,8 +102,7 @@ public class RateLimitingRequestThrottlerTest {
     for (int i = 0; i < 5; i++) {
       throttler.register(new MockThrottled());
     }
-    State state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
 
     // When
     clock.add(TWO_HUNDRED_MILLISECONDS);
@@ -114,8 +111,8 @@ public class RateLimitingRequestThrottlerTest {
 
     // Then
     assertThat(request.started).isSuccess();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).isEmpty();
   }
 
   @Test
@@ -124,8 +121,7 @@ public class RateLimitingRequestThrottlerTest {
     for (int i = 0; i < 5; i++) {
       throttler.register(new MockThrottled());
     }
-    State state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
 
     // When
     // (do not advance time)
@@ -134,10 +130,8 @@ public class RateLimitingRequestThrottlerTest {
 
     // Then
     assertThat(request.started).isNotDone();
-    state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(1);
-    assertThat(throttler.queue).containsExactly(request);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).containsExactly(request);
 
     ScheduledTaskCapturingEventLoop.CapturedTask<?> task = adminExecutor.nextTask();
     assertThat(task).isNotNull();
@@ -150,9 +144,8 @@ public class RateLimitingRequestThrottlerTest {
     for (int i = 0; i < 15; i++) {
       throttler.register(new MockThrottled());
     }
-    State state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(10);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).hasSize(10);
 
     // When
     clock.add(TWO_HUNDRED_MILLISECONDS); // even if time has passed, queued items have priority
@@ -180,10 +173,8 @@ public class RateLimitingRequestThrottlerTest {
 
     // Then
     assertThat(queued2.started).isNotDone();
-    State state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(1);
-    assertThat(throttler.queue).containsExactly(queued2);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).containsExactly(queued2);
   }
 
   @Test
@@ -199,9 +190,8 @@ public class RateLimitingRequestThrottlerTest {
     MockThrottled queued2 = new MockThrottled();
     throttler.register(queued2);
     assertThat(queued2.started).isNotDone();
-    State state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(2);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).hasSize(2);
 
     ScheduledTaskCapturingEventLoop.CapturedTask<?> task = adminExecutor.nextTask();
     assertThat(task).isNotNull();
@@ -212,10 +202,8 @@ public class RateLimitingRequestThrottlerTest {
     task.run();
 
     // Then
-    state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(2);
-    assertThat(throttler.queue).containsExactly(queued1, queued2);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).containsExactly(queued1, queued2);
     // task reschedules itself since it did not empty the queue
     task = adminExecutor.nextTask();
     assertThat(task).isNotNull();
@@ -228,10 +216,8 @@ public class RateLimitingRequestThrottlerTest {
     // Then
     assertThat(queued1.started).isSuccess();
     assertThat(queued2.started).isNotDone();
-    state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(1);
-    assertThat(throttler.queue).containsExactly(queued2);
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).containsExactly(queued2);
     // task reschedules itself since it did not empty the queue
     task = adminExecutor.nextTask();
     assertThat(task).isNotNull();
@@ -243,11 +229,27 @@ public class RateLimitingRequestThrottlerTest {
 
     // Then
     assertThat(queued2.started).isSuccess();
-    state = throttler.stateRef.get();
-    assertThat(state.storedPermits).isEqualTo(0);
-    assertThat(state.queueSize).isEqualTo(0);
-    assertThat(throttler.queue).isEmpty();
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+    assertThat(throttler.getQueue()).isEmpty();
     assertThat(adminExecutor.nextTask()).isNull();
+  }
+
+  @Test
+  public void should_store_new_permits_up_to_threshold() {
+    // Given
+    for (int i = 0; i < 5; i++) {
+      throttler.register(new MockThrottled());
+    }
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+
+    // When
+    // wait 2 seconds, should store at most 1 second worth of permits
+    clock.add(TimeUnit.NANOSECONDS.convert(2, TimeUnit.SECONDS));
+
+    // Then
+    // acquire to trigger the throttler to update its permits
+    throttler.register(new MockThrottled());
+    assertThat(throttler.getStoredPermits()).isEqualTo(4);
   }
 
   @Test

@@ -22,7 +22,6 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfig;
 import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.context.DriverContext;
-import com.datastax.oss.driver.internal.core.session.throttling.ConcurrencyLimitingRequestThrottler.State;
 import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.function.Consumer;
@@ -66,9 +65,8 @@ public class ConcurrencyLimitingRequestThrottlerTest {
 
     // Then
     assertThat(request.started).isSuccess();
-    State state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(1);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(1);
+    assertThat(throttler.getQueue()).isEmpty();
   }
 
   @Test
@@ -96,23 +94,20 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     for (int i = 0; i < 4; i++) { // fill to capacity
       throttler.register(new MockThrottled());
     }
-    State state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).isEmpty();
 
     // When
     completeCallback.accept(first);
-    state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(4);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(4);
+    assertThat(throttler.getQueue()).isEmpty();
     MockThrottled incoming = new MockThrottled();
     throttler.register(incoming);
 
     // Then
     assertThat(incoming.started).isSuccess();
-    state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).isEmpty();
   }
 
   @Test
@@ -121,9 +116,8 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     for (int i = 0; i < 5; i++) {
       throttler.register(new MockThrottled());
     }
-    State state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).isEmpty();
 
     // When
     MockThrottled incoming = new MockThrottled();
@@ -131,10 +125,8 @@ public class ConcurrencyLimitingRequestThrottlerTest {
 
     // Then
     assertThat(incoming.started).isNotDone();
-    state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(1);
-    assertThat(throttler.queue).containsExactly(incoming);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).containsExactly(incoming);
   }
 
   @Test
@@ -171,9 +163,8 @@ public class ConcurrencyLimitingRequestThrottlerTest {
 
     // Then
     assertThat(incoming.started).isSuccess();
-    State state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(0);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).isEmpty();
   }
 
   @Test
@@ -182,9 +173,8 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     for (int i = 0; i < 15; i++) {
       throttler.register(new MockThrottled());
     }
-    State state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(10);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).hasSize(10);
 
     // When
     MockThrottled incoming = new MockThrottled();
@@ -211,9 +201,8 @@ public class ConcurrencyLimitingRequestThrottlerTest {
 
     // Then
     assertThat(queued2.started).isNotDone();
-    State state = throttler.stateRef.get();
-    assertThat(state.concurrentRequests).isEqualTo(5);
-    assertThat(state.queueSize).isEqualTo(1);
+    assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
+    assertThat(throttler.getQueue()).hasSize(1);
   }
 
   @Test
