@@ -21,11 +21,11 @@ import java.util.concurrent.CompletionStage;
 
 class MockThrottled implements Throttled {
 
-  final CompletionStage<Void> started = new CompletableFuture<>();
+  final CompletionStage<Boolean> started = new CompletableFuture<>();
 
   @Override
-  public void onThrottleReady() {
-    started.toCompletableFuture().complete(null);
+  public void onThrottleReady(boolean wasDelayed) {
+    started.toCompletableFuture().complete(wasDelayed);
   }
 
   @Override

@@ -26,6 +26,7 @@ import com.datastax.oss.driver.api.core.config.DriverConfigProfile;
 import com.datastax.oss.driver.api.core.cql.PrepareRequest;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
 import com.datastax.oss.driver.api.core.retry.RetryDecision;
 import com.datastax.oss.driver.api.core.retry.RetryPolicy;
 import com.datastax.oss.driver.api.core.servererrors.BootstrappingException;
@@ -75,6 +76,7 @@ public abstract class CqlPrepareHandlerBase implements Throttled {
 
   private static final Logger LOG = LoggerFactory.getLogger(CqlPrepareHandlerBase.class);
 
+  private final long startTimeNanos;
   private final String logPrefix;
   private final PrepareRequest request;
   private final ConcurrentMap<ByteBuffer, DefaultPreparedStatement> preparedStatementsCache;
@@ -102,6 +104,7 @@ public abstract class CqlPrepareHandlerBase implements Throttled {
       InternalDriverContext context,
       String sessionLogPrefix) {
 
+    this.startTimeNanos = System.nanoTime();
     this.logPrefix = sessionLogPrefix + "|" + this.hashCode();
     LOG.debug("[{}] Creating new handler for prepare request {}", logPrefix, request);
 
@@ -157,7 +160,15 @@ public abstract class CqlPrepareHandlerBase implements Throttled {
   }
 
   @Override
-  public void onThrottleReady() {
+  public void onThrottleReady(boolean wasDelayed) {
+    if (wasDelayed) {
+      session
+          .getMetricUpdater()
+          .updateTimer(
+              DefaultSessionMetric.THROTTLING_DELAY,
+              System.nanoTime() - startTimeNanos,
+              TimeUnit.NANOSECONDS);
+    }
     sendRequest(null, 0);
   }
 
@@ -304,6 +315,7 @@ public abstract class CqlPrepareHandlerBase implements Throttled {
               request.getCustomPayload(),
               timeout,
               throttler,
+              session.getMetricUpdater(),
               logPrefix,
               message.toString());
       return handler
@@ -323,6 +335,7 @@ public abstract class CqlPrepareHandlerBase implements Throttled {
 
   @Override
   public void onThrottleFailure(RequestThrottlingException error) {
+    session.getMetricUpdater().incrementCounter(DefaultSessionMetric.THROTTLING_ERRORS);
     setFinalError(error);
   }
 

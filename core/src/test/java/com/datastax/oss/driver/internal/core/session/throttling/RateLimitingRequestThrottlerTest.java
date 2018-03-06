@@ -91,7 +91,7 @@ public class RateLimitingRequestThrottlerTest {
     throttler.register(request);
 
     // Then
-    assertThat(request.started).isSuccess();
+    assertThat(request.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isFalse());
     assertThat(throttler.getStoredPermits()).isEqualTo(4);
     assertThat(throttler.getQueue()).isEmpty();
   }
@@ -110,7 +110,7 @@ public class RateLimitingRequestThrottlerTest {
     throttler.register(request);
 
     // Then
-    assertThat(request.started).isSuccess();
+    assertThat(request.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isFalse());
     assertThat(throttler.getStoredPermits()).isEqualTo(0);
     assertThat(throttler.getQueue()).isEmpty();
   }
@@ -214,7 +214,7 @@ public class RateLimitingRequestThrottlerTest {
     task.run();
 
     // Then
-    assertThat(queued1.started).isSuccess();
+    assertThat(queued1.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isTrue());
     assertThat(queued2.started).isNotDone();
     assertThat(throttler.getStoredPermits()).isEqualTo(0);
     assertThat(throttler.getQueue()).containsExactly(queued2);
@@ -228,7 +228,7 @@ public class RateLimitingRequestThrottlerTest {
     task.run();
 
     // Then
-    assertThat(queued2.started).isSuccess();
+    assertThat(queued2.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isTrue());
     assertThat(throttler.getStoredPermits()).isEqualTo(0);
     assertThat(throttler.getQueue()).isEmpty();
     assertThat(adminExecutor.nextTask()).isNull();

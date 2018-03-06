@@ -64,7 +64,7 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     throttler.register(request);
 
     // Then
-    assertThat(request.started).isSuccess();
+    assertThat(request.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isFalse());
     assertThat(throttler.getConcurrentRequests()).isEqualTo(1);
     assertThat(throttler.getQueue()).isEmpty();
   }
@@ -90,7 +90,7 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     // Given
     MockThrottled first = new MockThrottled();
     throttler.register(first);
-    assertThat(first.started).isSuccess();
+    assertThat(first.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isFalse());
     for (int i = 0; i < 4; i++) { // fill to capacity
       throttler.register(new MockThrottled());
     }
@@ -105,7 +105,7 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     throttler.register(incoming);
 
     // Then
-    assertThat(incoming.started).isSuccess();
+    assertThat(incoming.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isFalse());
     assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
     assertThat(throttler.getQueue()).isEmpty();
   }
@@ -149,7 +149,7 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     // Given
     MockThrottled first = new MockThrottled();
     throttler.register(first);
-    assertThat(first.started).isSuccess();
+    assertThat(first.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isFalse());
     for (int i = 0; i < 4; i++) {
       throttler.register(new MockThrottled());
     }
@@ -162,7 +162,7 @@ public class ConcurrencyLimitingRequestThrottlerTest {
     completeCallback.accept(first);
 
     // Then
-    assertThat(incoming.started).isSuccess();
+    assertThat(incoming.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isTrue());
     assertThat(throttler.getConcurrentRequests()).isEqualTo(5);
     assertThat(throttler.getQueue()).isEmpty();
   }

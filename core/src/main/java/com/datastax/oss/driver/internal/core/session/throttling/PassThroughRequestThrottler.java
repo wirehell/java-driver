@@ -31,7 +31,7 @@ public class PassThroughRequestThrottler implements RequestThrottler {
 
   @Override
   public void register(Throttled request) {
-    request.onThrottleReady();
+    request.onThrottleReady(false);
   }
 
   @Override

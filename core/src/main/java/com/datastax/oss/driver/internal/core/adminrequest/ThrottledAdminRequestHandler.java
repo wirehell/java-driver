@@ -17,7 +17,9 @@ package com.datastax.oss.driver.internal.core.adminrequest;
 
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.RequestThrottlingException;
+import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
 import com.datastax.oss.driver.internal.core.channel.DriverChannel;
+import com.datastax.oss.driver.internal.core.metrics.SessionMetricUpdater;
 import com.datastax.oss.driver.internal.core.session.throttling.RequestThrottler;
 import com.datastax.oss.driver.internal.core.session.throttling.Throttled;
 import com.datastax.oss.protocol.internal.Message;
@@ -25,10 +27,13 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class ThrottledAdminRequestHandler extends AdminRequestHandler implements Throttled {
 
+  private final long startTimeNanos;
   private final RequestThrottler throttler;
+  private final SessionMetricUpdater metricUpdater;
 
   public ThrottledAdminRequestHandler(
       DriverChannel channel,
@@ -36,10 +41,13 @@ public class ThrottledAdminRequestHandler extends AdminRequestHandler implements
       Map<String, ByteBuffer> customPayload,
       Duration timeout,
       RequestThrottler throttler,
+      SessionMetricUpdater metricUpdater,
       String logPrefix,
       String debugString) {
     super(channel, message, customPayload, timeout, logPrefix, debugString);
+    this.startTimeNanos = System.nanoTime();
     this.throttler = throttler;
+    this.metricUpdater = metricUpdater;
   }
 
   @Override
@@ -50,12 +58,19 @@ public class ThrottledAdminRequestHandler extends AdminRequestHandler implements
   }
 
   @Override
-  public void onThrottleReady() {
+  public void onThrottleReady(boolean wasDelayed) {
+    if (wasDelayed) {
+      metricUpdater.updateTimer(
+          DefaultSessionMetric.THROTTLING_DELAY,
+          System.nanoTime() - startTimeNanos,
+          TimeUnit.NANOSECONDS);
+    }
     super.start();
   }
 
   @Override
   public void onThrottleFailure(RequestThrottlingException error) {
+    metricUpdater.incrementCounter(DefaultSessionMetric.THROTTLING_ERRORS);
     setFinalError(error);
   }
 

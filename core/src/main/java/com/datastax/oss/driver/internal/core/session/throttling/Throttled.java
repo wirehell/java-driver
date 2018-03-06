@@ -23,8 +23,11 @@ public interface Throttled {
   /**
    * Invoked by the throttler to indicate that the request can now start. The request must wait for
    * this call until it does any "actual" work (typically, writing to a connection).
+   *
+   * @param wasDelayed indicates whether the throttler delayed at all; this is so that requests
+   *     don't have to rely on measuring time to determine it (this is useful for metrics).
    */
-  void onThrottleReady();
+  void onThrottleReady(boolean wasDelayed);
 
   /**
    * Invoked by the throttler to indicate that the request cannot be fulfilled. Typically, this

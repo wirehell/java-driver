@@ -23,6 +23,7 @@ import com.datastax.oss.driver.internal.core.adminrequest.ThrottledAdminRequestH
 import com.datastax.oss.driver.internal.core.channel.DriverChannel;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.core.cql.CqlRequestHandlerBase;
+import com.datastax.oss.driver.internal.core.metrics.SessionMetricUpdater;
 import com.datastax.oss.driver.internal.core.pool.ChannelPool;
 import com.datastax.oss.driver.internal.core.session.throttling.RequestThrottler;
 import com.datastax.oss.driver.internal.core.util.concurrent.RunOrSchedule;
@@ -69,6 +70,7 @@ class ReprepareOnUp {
   private final int maxParallelism;
   private final Duration timeout;
   private final RequestThrottler throttler;
+  private final SessionMetricUpdater metricUpdater;
 
   // After the constructor, everything happens on the channel's event loop, so these fields do not
   // need any synchronization.
@@ -97,6 +99,8 @@ class ReprepareOnUp {
         config.getDefaultProfile().getInt(DefaultDriverOption.REPREPARE_MAX_STATEMENTS);
     this.maxParallelism =
         config.getDefaultProfile().getInt(DefaultDriverOption.REPREPARE_MAX_PARALLELISM);
+
+    this.metricUpdater = context.metricUpdaterFactory().getSessionUpdater();
   }
 
   void start() {
@@ -233,7 +237,14 @@ class ReprepareOnUp {
       Message message, Map<String, ByteBuffer> customPayload, String debugString) {
     ThrottledAdminRequestHandler reprepareHandler =
         new ThrottledAdminRequestHandler(
-            channel, message, customPayload, timeout, throttler, logPrefix, debugString);
+            channel,
+            message,
+            customPayload,
+            timeout,
+            throttler,
+            metricUpdater,
+            logPrefix,
+            debugString);
     return reprepareHandler.start();
   }
 }

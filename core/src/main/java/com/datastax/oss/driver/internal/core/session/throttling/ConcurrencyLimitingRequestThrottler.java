@@ -69,7 +69,7 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
         // We have capacity for one more concurrent request
         LOG.trace("[{}] Starting newly registered request", logPrefix);
         concurrentRequests += 1;
-        request.onThrottleReady();
+        request.onThrottleReady(false);
       } else if (queue.size() < maxQueueSize) {
         LOG.trace("[{}] Enqueuing request", logPrefix);
         queue.add(request);
@@ -125,7 +125,7 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
         concurrentRequests -= 1;
       } else {
         LOG.trace("[{}] Starting dequeued request", logPrefix);
-        queue.poll().onThrottleReady();
+        queue.poll().onThrottleReady(true);
         // don't touch concurrentRequests since we finished one but started another
       }
     }
@@ -140,6 +140,15 @@ public class ConcurrencyLimitingRequestThrottler implements RequestThrottler {
       for (Throttled request : queue) {
         fail(request, "The session is shutting down");
       }
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public int getQueueSize() {
+    lock.lock();
+    try {
+      return queue.size();
     } finally {
       lock.unlock();
     }

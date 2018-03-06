@@ -97,7 +97,7 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
         fail(request, "The session is shutting down");
       } else if (queue.isEmpty() && acquire(now, 1) == 1) {
         LOG.trace("[{}] Starting newly registered request", logPrefix);
-        request.onThrottleReady();
+        request.onThrottleReady(false);
       } else if (queue.size() < maxQueueSize) {
         LOG.trace("[{}] Enqueuing request", logPrefix);
         if (queue.isEmpty()) {
@@ -133,7 +133,7 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
       LOG.trace("[{}] Dequeuing {}/{} elements", logPrefix, toDequeue, queue.size());
       for (int i = 0; i < toDequeue; i++) {
         LOG.trace("[{}] Starting dequeued request", logPrefix);
-        queue.poll().onThrottleReady();
+        queue.poll().onThrottleReady(true);
       }
       if (!queue.isEmpty()) {
         LOG.trace(
@@ -205,6 +205,15 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
     int returned = (storedPermits >= wantedPermits) ? wantedPermits : storedPermits;
     storedPermits = Math.max(storedPermits - wantedPermits, 0);
     return returned;
+  }
+
+  public int getQueueSize() {
+    lock.lock();
+    try {
+      return queue.size();
+    } finally {
+      lock.unlock();
+    }
   }
 
   @VisibleForTesting

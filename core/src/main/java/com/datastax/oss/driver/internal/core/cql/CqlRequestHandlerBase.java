@@ -184,7 +184,15 @@ public abstract class CqlRequestHandlerBase implements Throttled {
   }
 
   @Override
-  public void onThrottleReady() {
+  public void onThrottleReady(boolean wasDelayed) {
+    if (wasDelayed) {
+      session
+          .getMetricUpdater()
+          .updateTimer(
+              DefaultSessionMetric.THROTTLING_DELAY,
+              System.nanoTime() - startTimeNanos,
+              TimeUnit.NANOSECONDS);
+    }
     sendRequest(null, 0, 0, true);
   }
 
@@ -316,6 +324,7 @@ public abstract class CqlRequestHandlerBase implements Throttled {
 
   @Override
   public void onThrottleFailure(RequestThrottlingException error) {
+    session.getMetricUpdater().incrementCounter(DefaultSessionMetric.THROTTLING_ERRORS);
     setFinalError(error);
   }
 
@@ -498,6 +507,7 @@ public abstract class CqlRequestHandlerBase implements Throttled {
                 repreparePayload.customPayload,
                 timeout,
                 throttler,
+                session.getMetricUpdater(),
                 logPrefix,
                 "Reprepare " + reprepareMessage.toString());
         reprepareHandler
