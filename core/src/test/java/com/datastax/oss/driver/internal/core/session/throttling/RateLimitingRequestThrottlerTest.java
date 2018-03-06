@@ -39,8 +39,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class RateLimitingRequestThrottlerTest {
 
+  private static final long ONE_HUNDRED_MILLISECONDS =
+      TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
   private static final long TWO_HUNDRED_MILLISECONDS =
       TimeUnit.NANOSECONDS.convert(200, TimeUnit.MILLISECONDS);
+  private static final long TWO_SECONDS = TimeUnit.NANOSECONDS.convert(2, TimeUnit.SECONDS);
 
   // Note: we trigger scheduled task manually, so this is for verification purposes only, it doesn't
   // need to be consistent with the actual throttling rate.
@@ -243,13 +246,41 @@ public class RateLimitingRequestThrottlerTest {
     assertThat(throttler.getStoredPermits()).isEqualTo(0);
 
     // When
-    // wait 2 seconds, should store at most 1 second worth of permits
-    clock.add(TimeUnit.NANOSECONDS.convert(2, TimeUnit.SECONDS));
+    clock.add(TWO_SECONDS); // should store at most 1 second worth of permits
 
     // Then
     // acquire to trigger the throttler to update its permits
     throttler.register(new MockThrottled());
     assertThat(throttler.getStoredPermits()).isEqualTo(4);
+  }
+
+  /**
+   * Ensure that permits are still created if we try to acquire faster than the minimal interval to
+   * create one permit. In an early version of the code there was a bug where we would reset the
+   * elapsed time on each acquisition attempt, and never regenerate permits.
+   */
+  @Test
+  public void should_keep_accumulating_time_if_no_permits_created() {
+    // Given
+    for (int i = 0; i < 5; i++) {
+      throttler.register(new MockThrottled());
+    }
+    assertThat(throttler.getStoredPermits()).isEqualTo(0);
+
+    // When
+    clock.add(ONE_HUNDRED_MILLISECONDS);
+
+    // Then
+    MockThrottled queued = new MockThrottled();
+    throttler.register(queued);
+    assertThat(queued.started).isNotDone();
+
+    // When
+    clock.add(ONE_HUNDRED_MILLISECONDS);
+    adminExecutor.nextTask().run();
+
+    // Then
+    assertThat(queued.started).isSuccess(wasDelayed -> assertThat(wasDelayed).isTrue());
   }
 
   @Test
