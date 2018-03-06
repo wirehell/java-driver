@@ -54,14 +54,14 @@ public class PercentileSpeculativeExecutionPolicy implements SpeculativeExecutio
     }
 
     @Override
-    public SpeculativeExecutionPlan newPlan(String loggedKeyspace, Statement statement) {
+    public SpeculativeExecutionPlan newPlan(String loggedKeyspace, final Statement statement) {
         return new SpeculativeExecutionPlan() {
             private final AtomicInteger remaining = new AtomicInteger(maxSpeculativeExecutions);
 
             @Override
             public long nextExecution(Host lastQueried) {
                 if (remaining.getAndDecrement() > 0)
-                    return percentileTracker.getLatencyAtPercentile(lastQueried, null, null, percentile);
+                    return percentileTracker.getLatencyAtPercentile(lastQueried, statement, null, percentile);
                 else
                     return -1;
             }
