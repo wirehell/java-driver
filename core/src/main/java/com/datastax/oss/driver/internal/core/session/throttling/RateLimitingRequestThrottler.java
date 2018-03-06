@@ -187,13 +187,18 @@ public class RateLimitingRequestThrottler implements RequestThrottler {
     assert lock.isHeldByCurrentThread() && !closed;
 
     long elapsedNanos = currentTimeNanos - lastUpdateNanos;
-    lastUpdateNanos = currentTimeNanos;
 
     if (elapsedNanos >= 1_000_000_000) {
       // created more than the max, so whatever was stored, the sum will be capped to the max
       storedPermits = maxRequestsPerSecond;
+      lastUpdateNanos = currentTimeNanos;
     } else if (elapsedNanos > 0) {
       int createdPermits = (int) (elapsedNanos * maxRequestsPerSecond / 1_000_000_000);
+      if (createdPermits > 0) {
+        // Only reset interval if we've generated permits, otherwise we might continually reset
+        // before we get the chance to generate anything.
+        lastUpdateNanos = currentTimeNanos;
+      }
       storedPermits = Math.min(storedPermits + createdPermits, maxRequestsPerSecond);
     }
 
